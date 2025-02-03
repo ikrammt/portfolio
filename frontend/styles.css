@@ -1,0 +1,170 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    padding: 20px;
+    width: 90%;
+    max-width: 1000px;
+}
+
+
+.photo-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 20px;
+}
+
+.profile-photo {
+    width: 250px;
+    height: 250px;
+    border-radius: 5%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.edit-photo-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30%; 
+    background-color: rgba(211, 211, 211, 0.8); 
+    border-radius: 0 0 5% 5%; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0; 
+}
+
+.photo-container:hover .edit-photo-overlay {
+    opacity: 1; 
+}
+
+.edit-photo {
+    background: none;
+    border: none;
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.description {
+    flex: 1;
+}
+
+.description h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.description p {
+    margin: 10px 0;
+    color: #555;
+    line-height: 1.5;
+}
+
+.links {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.link-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #ddd;
+    margin-right: 10px;
+    background-size: cover;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #333;
+    transition: background-color 0.3s ease;
+    text-decoration: none; 
+}
+
+.link-icon:hover {
+    background-color: #ccc; 
+}
+
+.link-icon[data-type="linkedin"] {
+    background-color: #0077b5; /* LinkedIn blue */
+    color: #fff;
+}
+
+.link-icon[data-type="github"] {
+    background-color: #333; /* GitHub black */
+    color: #fff;
+}
+
+.link-icon[data-type="instagram"] {
+    background-color: #e4405f; /* Instagram pink */
+    color: #fff;
+}
+
+.add-section-button {
+    background-color: #333; 
+    color: #fff; 
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+}
+
+.add-section-button:hover {
+    background-color: #5c5c5c; 
+}
+
+
+.sections-container {
+    margin-top: 10px;
+}
+
+.section {
+    background-color: #f9f9f9;
+    border-left: 4px solid #333;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+}
+
+.section h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.section p {
+    margin: 5px 0;
+    color: #555;
+}
+
