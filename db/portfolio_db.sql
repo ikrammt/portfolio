@@ -1,4 +1,4 @@
-CREATE DATABASE portfolio_db;
+-- CREATE DATABASE portfolio_db;
 
 CREATE TABLE profiles (
     id SERIAL PRIMARY KEY,
