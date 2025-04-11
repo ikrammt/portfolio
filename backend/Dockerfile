@@ -1,4 +1,4 @@
-FROM node:23.7
+FROM node:23.11-slim
 
 WORKDIR /app
 
@@ -6,13 +6,17 @@ COPY . .
 
 RUN npm install
 
-ENV DB_HOST =
+ENV DB_HOST=pf_db
 
-ENV DB_USER =
+ENV DB_USER=postgres
 
-ENV DB_PASSWORD = 
+ENV DB_PASSWORD=1234
 
-ENV port=3000
+ENV DB_NAME=portfolio_db
+
+ENV DB_PORT=5433
+
+ENV port=3000 
 
 EXPOSE 3000
 

@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 profileElement.dataset.id = profile.id; 
                 profileElement.innerHTML = `
                     <div class="photo-container">
-                        <img src="${profile.photo_url}" class="profile-photo">
+                        <img src="./images/Female_Avatar.png" class="profile-photo">
                         <div class="edit-photo-overlay">
                             <button class="edit-photo">Edit Photo</button>
                         </div>
