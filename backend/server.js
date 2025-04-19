@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
-const path = require('path'); 
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -9,8 +9,6 @@ const port = 3000;
 
 app.use(cors());
 app.use(express.json());
-
-app.use(express.static(path.join(__dirname, '../frontend')));
 
 const pool = new Pool({
     user: process.env.DB_USER,
@@ -80,11 +78,6 @@ app.post('/api/profiles/:id/photo', async (req, res) => {
         console.error(err);
         res.status(500).send('Server error');
     }
-});
-
-// Handle all other routes by serving the index.html file
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 // Start the server

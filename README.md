@@ -14,6 +14,7 @@ The project is containerized using Docker, with each layer running in its own co
 ---
 ## Setup Instructions
 
+### Using Dockerfile :
 ### 1. Build Docker Images
 Navigate to the root of the project and build the Docker images:
 
@@ -38,7 +39,26 @@ docker run -d --name pf-db --network pf-network -p 5432:5432 pf_db
 docker run -d --name pf-backend --network pf-network -p 3000:3000 pf-backend
 docker run -d --name pf-frontend --network pf-network -p 80:80 pf-frontend
 ```
+### Using Docker Compose :
+This project uses Docker Compose to manage the containerized application. Ensure you have Docker and Docker Compose installed on your system.
 
+### 1. Start the Application
+```bash
+docker-compose build 
+docker-compose up -d 
+```
+
+### 2. Stop the Application
+```bash
+docker-compose down
+```
+
+### 2. View Container Logs (Optional)
+```bash
+docker logs portfolio-project-db-1   
+docker logs portfolio-project-backend-1   
+docker logs portfolio-project-frontend-1
+```
 ---
 ## Demo 
 
