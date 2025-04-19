@@ -4,12 +4,15 @@ const { Pool } = require('pg');
 const path = require('path');
 require('dotenv').config();
 
+const { connectRabbitMQ, sendToQueue } = require('./rabbitmq/producer');
+
 const app = express();
 const port = 3000;
 
 app.use(cors());
 app.use(express.json());
 
+// PostgreSQL connection
 const pool = new Pool({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
@@ -18,6 +21,7 @@ const pool = new Pool({
     port: parseInt(process.env.DB_PORT, 10),
 });
 
+// Check DB connection
 pool.query('SELECT NOW()', (err, res) => {
     if (err) {
         console.error('Error connecting to the database:', err);
@@ -25,6 +29,11 @@ pool.query('SELECT NOW()', (err, res) => {
         console.log('Database connected successfully:', res.rows[0].now);
     }
 });
+
+// Connect to RabbitMQ
+connectRabbitMQ();
+
+// ROUTES
 
 app.get('/api/profiles', async (req, res) => {
     try {
@@ -80,7 +89,26 @@ app.post('/api/profiles/:id/photo', async (req, res) => {
     }
 });
 
-// Start the server
+// New route to queue a task
+app.post('/api/tasks', async (req, res) => {
+    const { userId, action } = req.body;
+
+    const task = {
+        userId,
+        action,
+        timestamp: new Date().toISOString(),
+    };
+
+    try {
+        await sendToQueue(task);
+        res.status(202).json({ message: 'Task queued successfully', task });
+    } catch (err) {
+        console.error('Failed to queue task:', err);
+        res.status(500).json({ error: 'Failed to queue task' });
+    }
+});
+
+// Start server
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });

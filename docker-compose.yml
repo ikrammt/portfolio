@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   frontend:
     build:
@@ -23,10 +25,23 @@ services:
       DB_NAME: portfolio_db
       DB_PORT: 5432
       PORT: 3000
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     networks:
       - pf-network
     depends_on:
       - db
+      - rabbitmq
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      - rabbitmq
+    networks:
+      - pf-network
 
   db:
     image: postgres:15.10
@@ -38,7 +53,18 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
     ports:
-      - "5433:5432" # Only expose for debugging/local access
+      - "5433:5432"
+    networks:
+      - pf-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"     # AMQP protocol
+      - "15672:15672"   # RabbitMQ Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
     networks:
       - pf-network
 
