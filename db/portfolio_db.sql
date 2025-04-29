@@ -1,4 +1,11 @@
--- CREATE DATABASE portfolio_db;
+-- Create replication user
+CREATE USER replicator WITH REPLICATION ENCRYPTED PASSWORD '1234';
+
+-- Configure replication parameters
+ALTER SYSTEM SET wal_level = replica;
+ALTER SYSTEM SET max_wal_senders = 3;
+ALTER SYSTEM SET hot_standby = on;
+
 
 CREATE TABLE profiles (
     id SERIAL PRIMARY KEY,

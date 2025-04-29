@@ -1,35 +1,46 @@
-version: '3.8'
-
 services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - pf-network
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "80"
     networks:
       - pf-network
     depends_on:
-      - backend
+      - nginx
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3000"
     environment:
-      DB_HOST: db
+      INSTANCE_ID: "backend-$${HOSTNAME:0:8}"
+      DB_HOST: postgres-primary
+      DB_REPLICAS: "postgres-replica1,postgres-replica2"
       DB_USER: postgres
       DB_PASSWORD: 1234
       DB_NAME: portfolio_db
       DB_PORT: 5432
-      PORT: 3000
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    deploy:
+      replicas: 3
     networks:
       - pf-network
     depends_on:
-      - db
+      - postgres-primary
       - rabbitmq
 
   worker:
@@ -37,23 +48,54 @@ services:
       context: ./worker
       dockerfile: Dockerfile
     environment:
+      WORKER_ID: worker_$${HOSTNAME:0:8}"
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-    depends_on:
-      - rabbitmq
+    deploy:
+      replicas: 2
     networks:
       - pf-network
+    depends_on:
+      - rabbitmq
 
-  db:
+  postgres-primary:
     image: postgres:15.10
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - pg_primary_data:/var/lib/postgresql/data
       - ./db/portfolio_db.sql:/docker-entrypoint-initdb.d/portfolio_db.sql
     environment:
       POSTGRES_DB: portfolio_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
-    ports:
-      - "5433:5432"
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: 1234
+    networks:
+      - pf-network
+
+  postgres-replica1:
+    image: postgres:15.10
+    volumes:
+      - pg_replica1_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_REPLICATION_MODE: replica
+      POSTGRES_REPLICATION_PRIMARY_HOST: postgres-primary
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: 1234
+    depends_on:
+      - postgres-primary
+    networks:
+      - pf-network
+
+  postgres-replica2:
+    image: postgres:15.10
+    volumes:
+      - pg_replica2_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_REPLICATION_MODE: replica
+      POSTGRES_REPLICATION_PRIMARY_HOST: postgres-primary
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: 1234
+    depends_on:
+      - postgres-primary
     networks:
       - pf-network
 
@@ -73,4 +115,6 @@ networks:
     driver: bridge
 
 volumes:
-  db_data:
+  pg_primary_data:
+  pg_replica1_data:
+  pg_replica2_data:
