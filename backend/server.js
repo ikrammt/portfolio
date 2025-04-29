@@ -1,21 +1,7 @@
-const express = require('express');
-const cors = require('cors');
-const { Pool } = require('pg');
-const path = require('path');
-require('dotenv').config();
-
-const { connectRabbitMQ, sendToQueue } = require('./rabbitmq/producer');
-
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json());
-
-// Database connection pools
+// Parse replicas from environment variables (if any)
 const replicas = process.env.DB_REPLICAS ? process.env.DB_REPLICAS.split(',') : [];
 
-// Primary pool for writes
+// Create a pool for the primary (write) database
 const primaryPool = new Pool({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
@@ -24,10 +10,10 @@ const primaryPool = new Pool({
     port: parseInt(process.env.DB_PORT, 10),
 });
 
-// Replica pool selector
+// Function to get a connection to a replica (or primary if none)
 const getReplicaPool = () => {
-    if (replicas.length === 0) return primaryPool;
-    const replicaHost = replicas[Math.floor(Math.random() * replicas.length)].trim();
+    if (replicas.length === 0) return primaryPool; // Fallback to primary
+    const replicaHost = replicas[Math.floor(Math.random() * replicas.length)].trim(); // Pick one randomly
     return new Pool({
         user: process.env.DB_USER,
         host: replicaHost,
@@ -37,22 +23,26 @@ const getReplicaPool = () => {
     });
 };
 
-// Unified query function with read/write separation
+// Unified query function for reads and writes
+// This function determines whether to use the primary DB or a replica based on the type of operation (write or read)
+// - If it's a write operation, the primary DB pool is used
+// - If it's a read operation and there are replicas defined, a replica is randomly selected
+// - If a read from replica fails, it retries the query on the primary pool to ensure high availability
 async function query(sql, params, isWrite = false) {
     const pool = isWrite ? primaryPool : getReplicaPool();
     try {
-        return await pool.query(sql, params);
+        return await pool.query(sql, params); // Execute the query
     } catch (err) {
         console.error(`Database error (${isWrite ? 'write' : 'read'}):`, err);
         if (!isWrite) {
-            // Fallback to primary if replica fails
+            // Retry on primary if replica fails
             return primaryPool.query(sql, params);
         }
         throw err;
     }
 }
 
-// Health check endpoint
+// Health check route
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'healthy',
@@ -62,7 +52,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Check DB connection
+// Test connection to primary DB on startup
 primaryPool.query('SELECT NOW()', (err, res) => {
     if (err) {
         console.error('Error connecting to primary database:', err);
@@ -74,11 +64,10 @@ primaryPool.query('SELECT NOW()', (err, res) => {
 // Connect to RabbitMQ
 connectRabbitMQ();
 
-// ROUTES
-
+// GET all profiles
 app.get('/api/profiles', async (req, res) => {
     try {
-        const result = await query('SELECT * FROM profiles', [], false); // Read operation
+        const result = await query('SELECT * FROM profiles', [], false); // Read query
         res.json(result.rows);
     } catch (err) {
         console.error(err);
@@ -86,6 +75,7 @@ app.get('/api/profiles', async (req, res) => {
     }
 });
 
+// GET a single profile by ID
 app.get('/api/profiles/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -100,6 +90,7 @@ app.get('/api/profiles/:id', async (req, res) => {
     }
 });
 
+// POST: Add a new section to a profile
 app.post('/api/profiles/:id/sections', async (req, res) => {
     const { id } = req.params;
     const { type, title, description } = req.body;
@@ -107,7 +98,7 @@ app.post('/api/profiles/:id/sections', async (req, res) => {
         const result = await query(
             'INSERT INTO sections (profile_id, type, title, description) VALUES ($1, $2, $3, $4) RETURNING *',
             [id, type, title, description],
-            true // Write operation
+            true // Write query
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -116,6 +107,7 @@ app.post('/api/profiles/:id/sections', async (req, res) => {
     }
 });
 
+// POST: Update profile photo
 app.post('/api/profiles/:id/photo', async (req, res) => {
     const { id } = req.params;
     const { photo_url } = req.body;
@@ -123,7 +115,7 @@ app.post('/api/profiles/:id/photo', async (req, res) => {
         const result = await query(
             'UPDATE profiles SET photo_url = $1 WHERE id = $2 RETURNING *',
             [photo_url, id],
-            true // Write operation
+            true // Write query
         );
         res.json(result.rows[0]);
     } catch (err) {
@@ -132,6 +124,7 @@ app.post('/api/profiles/:id/photo', async (req, res) => {
     }
 });
 
+// POST: Queue a background task
 app.post('/api/tasks', async (req, res) => {
     const { userId, action } = req.body;
     const task = {
@@ -141,7 +134,7 @@ app.post('/api/tasks', async (req, res) => {
     };
 
     try {
-        await sendToQueue(task);
+        await sendToQueue(task); // Send task to RabbitMQ
         res.status(202).json({ 
             message: 'Task queued successfully', 
             task,
@@ -153,7 +146,7 @@ app.post('/api/tasks', async (req, res) => {
     }
 });
 
-// Start server
+// Start the server
 app.listen(port, () => {
     console.log(`Server instance ${process.env.INSTANCE_ID || 'standalone'} running on http://localhost:${port}`);
 });

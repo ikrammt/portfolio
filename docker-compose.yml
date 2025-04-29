@@ -1,10 +1,10 @@
 services:
-  nginx:
+  nginx: #Acts as reverse proxy and load balancer
     image: nginx:alpine
     ports:
       - "80:80"
     volumes:
-      - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro # Mounts custom Nginx config (read-only)
     depends_on:
       - backend
     networks:
@@ -27,7 +27,7 @@ services:
     ports:
       - "3000"
     environment:
-      INSTANCE_ID: "backend-$${HOSTNAME:0:8}"
+      INSTANCE_ID: "backend-$${HOSTNAME:0:8}" # Unique instance ID geerated by docker 
       DB_HOST: postgres-primary
       DB_REPLICAS: "postgres-replica1,postgres-replica2"
       DB_USER: postgres
@@ -35,6 +35,11 @@ services:
       DB_NAME: portfolio_db
       DB_PORT: 5432
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     deploy:
       replicas: 3
     networks:
